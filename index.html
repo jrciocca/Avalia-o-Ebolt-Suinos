@@ -16,7 +16,8 @@
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   body {
     margin: 0; font-family: -apple-system, Roboto, Arial, sans-serif;
-    background: #111418; color: #eee; min-height: 100vh; padding-bottom: 20px;
+    background: #111418; color: #eee; min-height: 100vh;
+    display: flex; flex-direction: column;
   }
   header {
     background: #1b1f24; padding: 14px 16px; position: sticky; top: 0; z-index: 10;
@@ -32,7 +33,7 @@
     background: #2a2f36; color: #ccc; border: 1px solid #3a3f46;
     border-radius: 8px; padding: 16px 18px; font-size: 18px;
   }
-  main { padding: 16px; }
+  main { padding: 16px; flex: 1; display: flex; flex-direction: column; min-height: 0; padding-bottom: 24px; }
   .stats {
     display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px;
   }
@@ -43,11 +44,11 @@
   .stat-label { font-size: 16px; color: #999; margin-top: 4px; }
   .pct-good { color: #4ade80; }
   .pct-bad { color: #f87171; }
-  .tap-zone { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .tap-zone { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; flex: 1; min-height: 160px; }
   .tap-btn {
-    padding: 52px 10px; border-radius: 16px; border: none; font-size: 30px;
+    height: 100%; border-radius: 16px; border: none; font-size: 30px;
     font-weight: 700; color: #fff; display: flex; flex-direction: column;
-    align-items: center; gap: 10px; user-select: none;
+    align-items: center; justify-content: center; gap: 10px; user-select: none;
   }
   .tap-btn:active { transform: scale(0.97); }
   .btn-ok { background: #16803d; }
