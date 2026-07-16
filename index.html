@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Insensibilização Suínos</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<meta name="theme-color" content="#1b1f24">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="InsensSuínos">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; font-family: -apple-system, Roboto, Arial, sans-serif;
+    background: #111418; color: #eee; min-height: 100vh; padding-bottom: 20px;
+  }
+  header {
+    background: #1b1f24; padding: 14px 16px; position: sticky; top: 0; z-index: 10;
+    border-bottom: 1px solid #2a2f36;
+  }
+  h1 { font-size: 17px; margin: 0 0 10px; font-weight: 600; }
+  .row { display: flex; gap: 8px; margin-bottom: 8px; }
+  input[type=text], input[type=date] {
+    flex: 1; background: #22262c; border: 1px solid #333; color: #eee;
+    padding: 10px; border-radius: 8px; font-size: 14px;
+  }
+  .btn-secondary {
+    background: #2a2f36; color: #ccc; border: 1px solid #3a3f46;
+    border-radius: 8px; padding: 10px 12px; font-size: 13px;
+  }
+  main { padding: 16px; }
+  .stats {
+    display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 16px;
+  }
+  .stat-card {
+    background: #1b1f24; border-radius: 10px; padding: 10px; text-align: center;
+  }
+  .stat-num { font-size: 22px; font-weight: 700; }
+  .stat-label { font-size: 11px; color: #999; margin-top: 2px; }
+  .pct-good { color: #4ade80; }
+  .pct-bad { color: #f87171; }
+  .tap-zone { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+  .tap-btn {
+    padding: 34px 10px; border-radius: 16px; border: none; font-size: 18px;
+    font-weight: 700; color: #fff; display: flex; flex-direction: column;
+    align-items: center; gap: 6px; user-select: none;
+  }
+  .tap-btn:active { transform: scale(0.97); }
+  .btn-ok { background: #16803d; }
+  .btn-fail { background: #b91c1c; }
+  .tap-icon { font-size: 30px; }
+  .undo-bar { text-align: center; margin-bottom: 14px; }
+  .undo-btn { background: none; border: none; color: #6ba3ff; font-size: 13px; padding: 6px; }
+  section.signs {
+    background: #1b1f24; border-radius: 10px; padding: 12px; margin-bottom: 14px;
+  }
+  section.signs h2 { font-size: 13px; margin: 0 0 8px; color: #bbb; }
+  .sign-chip {
+    display: inline-block; background: #22262c; border: 1px solid #333;
+    color: #ccc; padding: 8px 10px; border-radius: 20px; font-size: 12.5px;
+    margin: 4px 4px 0 0;
+  }
+  .sign-chip.active { background: #7f1d1d; border-color: #b91c1c; color: #fff; }
+  #emergBtn.active { background: #7c4a00; border-color: #d97706; color: #fff; font-weight: 600; }
+  #clonicoBtn.active { background: #7c2d12; border-color: #ea580c; color: #fff; font-weight: 600; }
+  details { background: #1b1f24; border-radius: 10px; padding: 10px 12px; margin-bottom: 14px; }
+  summary { font-size: 13px; color: #9ab; cursor: pointer; }
+  .ref-list { font-size: 12.5px; color: #bbb; margin-top: 8px; line-height: 1.5; }
+  .ref-list b { color: #eee; }
+  .history-item {
+    background: #1b1f24; border-radius: 10px; padding: 10px 12px; margin-bottom: 8px;
+    display: flex; justify-content: space-between; align-items: center; font-size: 13px;
+  }
+  .history-item button { background: #2a2f36; color: #ccc; border: none; border-radius: 6px; padding: 6px 10px; font-size: 12px; }
+  .toast {
+    position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+    background: #2a2f36; color: #eee; padding: 10px 16px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transition: opacity .3s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .modal-bg {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 20;
+    align-items: flex-end;
+  }
+  .modal-bg.show { display: flex; }
+  .modal {
+    background: #1b1f24; width: 100%; border-radius: 16px 16px 0 0; padding: 16px;
+    max-height: 70vh; overflow-y: auto;
+  }
+  .modal h3 { font-size: 15px; margin: 0 0 10px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 14px; }
+  .modal-actions button { flex: 1; padding: 12px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐖 Insensibilização — Avaliação de Eficiência</h1>
+  <div class="row">
+    <input type="text" id="produtor" placeholder="Produtor">
+    <input type="text" id="lote" placeholder="Lote nº">
+  </div>
+  <div class="row">
+    <button class="btn-secondary" onclick="novoLote()">＋ Novo lote</button>
+    <button class="btn-secondary" onclick="showHistory()">📋 Histórico</button>
+  </div>
+  <div class="row">
+    <button class="btn-secondary" style="flex:1" onclick="exportarCSV()">⬇ Exportar tudo (CSV)</button>
+  </div>
+  <div style="font-size:11px; color:#888; padding: 0 2px 6px;">
+    💾 Backup automático a cada 10 registros, salvo direto em Downloads.
+  </div>
+</header>
+
+<main>
+  <div class="stats">
+    <div class="stat-card">
+      <div class="stat-num" id="statTotal">0</div>
+      <div class="stat-label">Animais</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num pct-good" id="statPos">0</div>
+      <div class="stat-label">Efetivos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num pct-bad" id="statNeg">0</div>
+      <div class="stat-label">Falhas</div>
+    </div>
+  </div>
+  <div class="stats" style="grid-template-columns:1fr;">
+    <div class="stat-card">
+      <div class="stat-num" id="statPct">—</div>
+      <div class="stat-label">% eficiência (meta ≥ 95%, ideal ≥ 99% — NAMI/AVMA)</div>
+    </div>
+  </div>
+  <div class="stats" style="grid-template-columns:1fr 1fr; margin-bottom:16px;">
+    <div class="stat-card">
+      <div class="stat-num" id="statEmerg" style="color:#f59e0b">0</div>
+      <div class="stat-label">⚠️ Emergências (já incluídas no total)</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="statClonico" style="color:#fb923c">0</div>
+      <div class="stat-label">🔥 Fase clônica intensa</div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn-secondary" id="emergBtn" style="flex:1;" onclick="toggleEmergencia()">
+      ⚠️ Marcar próximo como emergência (outro equipamento)
+    </button>
+  </div>
+  <div class="row" style="margin-bottom:10px;">
+    <button class="btn-secondary" id="clonicoBtn" style="flex:1;" onclick="toggleClonico()">
+      🔥 Marcar próximo com fase clônica intensa
+    </button>
+  </div>
+
+  <div class="tap-zone">
+    <button class="tap-btn btn-ok" onclick="registrar('positivo')">
+      <span class="tap-icon">✓</span> Efetivo
+    </button>
+    <button class="tap-btn btn-fail" onclick="abrirModalFalha()">
+      <span class="tap-icon">✗</span> Falhou
+    </button>
+  </div>
+
+  <div class="undo-bar">
+    <button class="undo-btn" onclick="desfazer()">↩ Desfazer último registro</button>
+  </div>
+
+  <div class="row">
+    <button class="btn-secondary" style="flex:1" onclick="copiarCSV()">📋 Copiar registro (backup rápido)</button>
+  </div>
+
+  <details open id="logDetails">
+    <summary>📝 Registro ao vivo deste lote (<span id="logCount">0</span>)</summary>
+    <div id="liveLog" class="ref-list"></div>
+  </details>
+
+  <details>
+    <summary>📖 Referência — sinais a observar</summary>
+    <div class="ref-list">
+      <b>Insensibilização efetiva (deve estar presente):</b><br>
+      • Colapso imediato ao chão<br>
+      • Ausência de respiração rítmica<br>
+      • Ausência de reflexo corneal (piscar)<br>
+      • Rigidez tônica / opistótono (pescoço arqueado)<br>
+      • Pupilas dilatadas e fixas<br>
+      • Ausência de reflexo de endireitamento<br>
+      • Língua flácida, para fora da boca<br><br>
+      <b>Sinais de retorno à sensibilidade (não deve estar presente):</b><br>
+      • Respiração rítmica retornando<br>
+      • Vocalização durante sangria<br>
+      • Reflexo corneal presente / piscar espontâneo<br>
+      • Tentativa de se levantar<br>
+      • Resposta a estímulo doloroso (bicada no focinho)<br>
+      • Pedalada coordenada (distinta de convulsão tônico-clônica)
+    </div>
+  </details>
+
+  <div id="historyList"></div>
+</main>
+
+<div class="modal-bg" id="modalFalha">
+  <div class="modal">
+    <h3>Qual(is) sinal(is) de falha observado(s)? (opcional)</h3>
+    <div id="signChips"></div>
+    <div class="modal-actions">
+      <button style="background:#2a2f36;color:#ccc" onclick="fecharModal()">Cancelar</button>
+      <button style="background:#b91c1c;color:#fff" onclick="confirmarFalha()">Registrar falha</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SIGNS = [
+  "Respiração retornando", "Vocalização", "Reflexo corneal presente",
+  "Piscar espontâneo", "Tentativa de se levantar", "Resposta a estímulo doloroso",
+  "Pedalada coordenada"
+];
+
+let selectedSigns = new Set();
+let emergenciaAtiva = false;
+let clonicoAtivo = false;
+const LOG_KEY = 'suino_insens_log_v1';
+
+function toggleEmergencia() {
+  emergenciaAtiva = !emergenciaAtiva;
+  const btn = document.getElementById('emergBtn');
+  btn.classList.toggle('active', emergenciaAtiva);
+  btn.textContent = emergenciaAtiva
+    ? '⚠️ ATIVO — próximo registro será marcado como emergência'
+    : '⚠️ Marcar próximo como emergência (outro equipamento)';
+}
+
+function toggleClonico() {
+  clonicoAtivo = !clonicoAtivo;
+  const btn = document.getElementById('clonicoBtn');
+  btn.classList.toggle('active', clonicoAtivo);
+  btn.textContent = clonicoAtivo
+    ? '🔥 ATIVO — próximo registro será marcado como fase clônica intensa'
+    : '🔥 Marcar próximo com fase clônica intensa';
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1400);
+}
+
+// Todo o registro bruto vive num único array no localStorage do navegador.
+// Funciona 100% offline: uma vez que o arquivo esteja salvo no aparelho e
+// aberto pelo mesmo navegador, os dados persistem entre usos sem internet.
+function loadLog() {
+  try {
+    const raw = localStorage.getItem(LOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) {
+    return [];
+  }
+}
+
+function saveLog(log) {
+  try {
+    localStorage.setItem(LOG_KEY, JSON.stringify(log));
+  } catch(e) {
+    toast('Erro ao salvar (armazenamento local)');
+  }
+}
+
+function currentEntries() {
+  const produtor = document.getElementById('produtor').value.trim();
+  const lote = document.getElementById('lote').value.trim();
+  return loadLog().filter(e => e.produtor === produtor && e.lote === lote);
+}
+
+function renderStats(entries) {
+  const total = entries.length;
+  const pos = entries.filter(e => e.result === 'positivo').length;
+  const neg = total - pos;
+  const pct = total ? ((pos/total)*100).toFixed(1) : '—';
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statPos').textContent = pos;
+  document.getElementById('statNeg').textContent = neg;
+  const pctEl = document.getElementById('statPct');
+  pctEl.textContent = total ? pct + '%' : '—';
+  pctEl.className = 'stat-num ' + (total && pct >= 95 ? 'pct-good' : (total ? 'pct-bad' : ''));
+
+  document.getElementById('statEmerg').textContent = entries.filter(e => e.emergencia).length;
+  document.getElementById('statClonico').textContent = entries.filter(e => e.clonicoIntenso).length;
+
+  // Log visível na tela — nunca depende do storage funcionar para ser visto/copiado
+  document.getElementById('logCount').textContent = total;
+  const logEl = document.getElementById('liveLog');
+  if (!total) {
+    logEl.innerHTML = 'Nenhum registro ainda.';
+  } else {
+    logEl.innerHTML = entries.map((e, i) => ({e, seq: i+1})).reverse().map(({e, seq}) => {
+      const hora = new Date(e.ts).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+      const icone = e.result === 'positivo' ? '✓' : '✗';
+      const cor = e.result === 'positivo' ? '#4ade80' : '#f87171';
+      const sinais = (e.signs && e.signs.length) ? ` — ${e.signs.join(', ')}` : '';
+      const emerg = e.emergencia ? ' <b style="color:#f59e0b">⚠️ EMERGÊNCIA (outro equipamento)</b>' : '';
+      const clonico = e.clonicoIntenso ? ' <b style="color:#fb923c">🔥 FASE CLÔNICA INTENSA</b>' : '';
+      return `<div style="color:${cor}">#${seq} ${icone} ${hora}${sinais}${emerg}${clonico}</div>`;
+    }).join('');
+  }
+}
+
+function refresh() {
+  renderStats(currentEntries());
+}
+
+function registrar(result, signs = []) {
+  const produtor = document.getElementById('produtor').value.trim();
+  const lote = document.getElementById('lote').value.trim();
+  const log = loadLog();
+  log.push({
+    produtor, lote, result, signs,
+    emergencia: emergenciaAtiva,
+    clonicoIntenso: clonicoAtivo,
+    ts: new Date().toISOString()
+  });
+  saveLog(log);
+  refresh();
+  const tags = [];
+  if (emergenciaAtiva) tags.push('EMERGÊNCIA');
+  if (clonicoAtivo) tags.push('FASE CLÔNICA INTENSA');
+  toast(tags.length ? `⚠️ Registrado como ${tags.join(' + ')}` : (result === 'positivo' ? 'Efetivo registrado' : 'Falha registrada'));
+
+  if (emergenciaAtiva) {
+    emergenciaAtiva = false;
+    const btn = document.getElementById('emergBtn');
+    btn.classList.remove('active');
+    btn.textContent = '⚠️ Marcar próximo como emergência (outro equipamento)';
+  }
+  if (clonicoAtivo) {
+    clonicoAtivo = false;
+    const btn = document.getElementById('clonicoBtn');
+    btn.classList.remove('active');
+    btn.textContent = '🔥 Marcar próximo com fase clônica intensa';
+  }
+
+  // Backup automático: a cada N registros, salva um arquivo CSV físico na pasta
+  // Downloads — isso sobrevive mesmo se o navegador limpar o localStorage.
+  const AUTO_BACKUP_INTERVAL = 10;
+  if (log.length % AUTO_BACKUP_INTERVAL === 0) {
+    exportarCSV(true);
+  }
+}
+
+function desfazer() {
+  const produtor = document.getElementById('produtor').value.trim();
+  const lote = document.getElementById('lote').value.trim();
+  const log = loadLog();
+  const idx = [...log].reverse().findIndex(e => e.produtor === produtor && e.lote === lote);
+  if (idx === -1) { toast('Nada para desfazer'); return; }
+  const realIdx = log.length - 1 - idx;
+  log.splice(realIdx, 1);
+  saveLog(log);
+  refresh();
+  toast('Último registro removido');
+}
+
+function exportarCSV(automatico = false) {
+  const log = loadLog();
+  if (!log.length) { if (!automatico) toast('Nenhum registro para exportar'); return; }
+  const header = 'produtor,lote,sequencia_no_lote,data_hora,resultado,emergencia_outro_equipamento,fase_clonica_intensa,sinais_observados\n';
+  // sequência calculada dentro de cada grupo produtor+lote, na ordem em que ocorreram
+  const seqCounters = {};
+  const rows = log.map(e => {
+    const k = `${e.produtor}||${e.lote}`;
+    seqCounters[k] = (seqCounters[k] || 0) + 1;
+    const sinais = (e.signs || []).join(' | ').replace(/,/g, ';');
+    return [
+      `"${(e.produtor||'').replace(/"/g,'""')}"`,
+      `"${(e.lote||'').replace(/"/g,'""')}"`,
+      seqCounters[k],
+      e.ts,
+      e.result,
+      e.emergencia ? 'sim' : 'não',
+      e.clonicoIntenso ? 'sim' : 'não',
+      `"${sinais}"`
+    ].join(',');
+  }).join('\n');
+  const csv = header + rows;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const now = new Date();
+  const stamp = now.toISOString().slice(0,16).replace('T','_').replace(':','h') + 'm';
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = automatico
+    ? `insensibilizacao_AUTOBACKUP_${stamp}.csv`
+    : `insensibilizacao_registro_${now.toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast(automatico ? '💾 Backup automático salvo em Downloads' : 'CSV exportado');
+}
+
+// Cópia rápida do lote atual em texto simples — não depende de download nem de
+// localStorage funcionar. Cole em Notas/WhatsApp para você mesmo como backup imediato.
+async function copiarCSV() {
+  const entries = currentEntries();
+  if (!entries.length) { toast('Nada para copiar ainda'); return; }
+  const produtor = document.getElementById('produtor').value.trim();
+  const lote = document.getElementById('lote').value.trim();
+  const header = `Produtor: ${produtor} | Lote: ${lote}\n`;
+  const linhas = entries.map((e, i) => {
+    const hora = new Date(e.ts).toLocaleString('pt-BR');
+    const sinais = (e.signs && e.signs.length) ? ` [${e.signs.join(', ')}]` : '';
+    const emerg = e.emergencia ? ' ⚠️ EMERGÊNCIA (outro equipamento)' : '';
+    const clonico = e.clonicoIntenso ? ' 🔥 FASE CLÔNICA INTENSA' : '';
+    return `#${i+1} ${hora} — ${e.result}${sinais}${emerg}${clonico}`;
+  }).join('\n');
+  const texto = header + linhas;
+  try {
+    await navigator.clipboard.writeText(texto);
+    toast('Copiado! Cole em Notas/WhatsApp agora');
+  } catch(e) {
+    // Fallback se a API de clipboard não estiver disponível offline
+    const ta = document.createElement('textarea');
+    ta.value = texto;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+      document.execCommand('copy');
+      toast('Copiado! Cole em Notas/WhatsApp agora');
+    } catch(e2) {
+      toast('Não foi possível copiar — veja o registro na tela abaixo');
+    }
+    document.body.removeChild(ta);
+  }
+}
+
+function abrirModalFalha() {
+  selectedSigns = new Set();
+  const container = document.getElementById('signChips');
+  container.innerHTML = '';
+  SIGNS.forEach(s => {
+    const chip = document.createElement('span');
+    chip.className = 'sign-chip';
+    chip.textContent = s;
+    chip.onclick = () => {
+      if (selectedSigns.has(s)) { selectedSigns.delete(s); chip.classList.remove('active'); }
+      else { selectedSigns.add(s); chip.classList.add('active'); }
+    };
+    container.appendChild(chip);
+  });
+  document.getElementById('modalFalha').classList.add('show');
+}
+
+function fecharModal() {
+  document.getElementById('modalFalha').classList.remove('show');
+}
+
+function confirmarFalha() {
+  registrar('negativo', Array.from(selectedSigns));
+  fecharModal();
+}
+
+function novoLote() {
+  document.getElementById('produtor').value = '';
+  document.getElementById('lote').value = '';
+  renderStats([]);
+  toast('Novo lote pronto — preencha produtor/lote');
+}
+
+document.getElementById('produtor').addEventListener('change', refresh);
+document.getElementById('lote').addEventListener('change', refresh);
+
+function showHistory() {
+  const listEl = document.getElementById('historyList');
+  const log = loadLog();
+  if (!log.length) {
+    listEl.innerHTML = '<div class="history-item">Nenhum registro salvo ainda.</div>';
+    return;
+  }
+  const groups = {};
+  log.forEach(e => {
+    const k = `${e.produtor}||${e.lote}`;
+    if (!groups[k]) groups[k] = { produtor: e.produtor, lote: e.lote, entries: [] };
+    groups[k].entries.push(e);
+  });
+  listEl.innerHTML = '<h2 style="font-size:13px;color:#bbb;margin:10px 0 6px;">Lotes salvos</h2>';
+  Object.values(groups).forEach(g => {
+    const total = g.entries.length;
+    const pos = g.entries.filter(e => e.result === 'positivo').length;
+    const pct = total ? ((pos/total)*100).toFixed(1) : '—';
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.innerHTML = `<span>${g.produtor || '(sem produtor)'} · Lote ${g.lote || '?'} — ${total} animais, ${pct}%</span>`;
+    const btn = document.createElement('button');
+    btn.textContent = 'Abrir';
+    btn.onclick = () => {
+      document.getElementById('produtor').value = g.produtor || '';
+      document.getElementById('lote').value = g.lote || '';
+      refresh();
+      window.scrollTo(0,0);
+    };
+    item.appendChild(btn);
+    listEl.appendChild(item);
+  });
+}
+
+refresh();
+
+// Registro do service worker — só funciona quando servido via https (ex. GitHub
+// Pages). Ao abrir localmente via file://, isso falha silenciosamente e o app
+// continua funcionando normalmente, só sem o cache offline extra.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
